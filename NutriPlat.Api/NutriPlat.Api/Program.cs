@@ -86,6 +86,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<INutritionPlanService, NutritionPlanService>();
 builder.Services.AddScoped<IWorkoutRoutineService, WorkoutRoutineService>(); // Asegúrate de que este esté aquí si ya implementaste WorkoutRoutines
+builder.Services.AddScoped<IUserService, UserService>(); // <-- AÑADE ESTA LÍNEA
+
 
 // 6. Configurar Controladores
 builder.Services.AddControllers()

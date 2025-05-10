@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NutriPlat.Api.Data;
 
@@ -10,9 +11,11 @@ using NutriPlat.Api.Data;
 namespace NutriPlat.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250510160009_AddProgressTrackingModule")]
+    partial class AddProgressTrackingModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
@@ -181,12 +184,6 @@ namespace NutriPlat.Api.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("MyNutritionistId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("MyTrainerId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
@@ -215,10 +212,6 @@ namespace NutriPlat.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("MyNutritionistId");
-
-                    b.HasIndex("MyTrainerId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -441,23 +434,6 @@ namespace NutriPlat.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("NutriPlat.Api.Models.ApplicationUser", b =>
-                {
-                    b.HasOne("NutriPlat.Api.Models.ApplicationUser", "MyNutritionist")
-                        .WithMany("LinkedClientsAsNutritionist")
-                        .HasForeignKey("MyNutritionistId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("NutriPlat.Api.Models.ApplicationUser", "MyTrainer")
-                        .WithMany("LinkedClientsAsTrainer")
-                        .HasForeignKey("MyTrainerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("MyNutritionist");
-
-                    b.Navigation("MyTrainer");
-                });
-
             modelBuilder.Entity("NutriPlat.Api.Models.NutritionPlanEntity", b =>
                 {
                     b.HasOne("NutriPlat.Api.Models.ApplicationUser", null)
@@ -548,10 +524,6 @@ namespace NutriPlat.Api.Migrations
                     b.Navigation("CreatedNutritionPlans");
 
                     b.Navigation("CreatedWorkoutRoutines");
-
-                    b.Navigation("LinkedClientsAsNutritionist");
-
-                    b.Navigation("LinkedClientsAsTrainer");
 
                     b.Navigation("ProgressEntries");
                 });

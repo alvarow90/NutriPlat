@@ -6,6 +6,7 @@ using NutriPlat.Api.Data;
 using NutriPlat.Api.Models;
 using NutriPlat.Shared.Dtos;
 using NutriPlat.Shared.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,15 +43,15 @@ namespace NutriPlat.Api.Services
             };
             _context.NutritionPlans.Add(planEntity);
             try { await _context.SaveChangesAsync(); }
-            catch (DbUpdateException ex) { _logger.LogError(ex, "Error DB al crear plan."); return null; }
-            return MapearPlanEntidadADto(planEntity); // Llamada al método estático
+            catch (DbUpdateException ex) { _logger.LogError(ex, "Error DB al crear plan para {CreatorUserId}.", creatorUserId); return null; }
+            return MapearPlanEntidadADto(planEntity);
         }
 
         public async Task<IEnumerable<NutritionPlanDto>> GetAllPlansAsync()
         {
             return await _context.NutritionPlans
                 .AsNoTracking()
-                .Select(p => MapearPlanEntidadADto(p)!) // Llamada al método estático
+                .Select(p => MapearPlanEntidadADto(p)!)
                 .ToListAsync();
         }
 
@@ -59,40 +60,40 @@ namespace NutriPlat.Api.Services
             var planEntity = await _context.NutritionPlans
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == planId);
-            return planEntity == null ? null : MapearPlanEntidadADto(planEntity); // Llamada al método estático
+            return planEntity == null ? null : MapearPlanEntidadADto(planEntity);
         }
 
         public async Task<NutritionPlanDto?> UpdatePlanAsync(string planId, NutritionPlanDto planDto, string requestingUserId)
         {
             var planEntity = await _context.NutritionPlans.FindAsync(planId);
-            if (planEntity == null) return null;
+            if (planEntity == null) { _logger.LogWarning("Actualización fallida: Plan {PlanId} no encontrado.", planId); return null; }
 
             var requester = await _userManager.FindByIdAsync(requestingUserId);
             bool isAdmin = requester != null && requester.AppRole == UserRole.Admin;
 
             if (planEntity.NutritionistId != requestingUserId && !isAdmin)
             {
-                _logger.LogWarning("Usuario {RequestingUserId} intentó actualizar plan {PlanId} sin autorización.", requestingUserId, planId);
+                _logger.LogWarning("Usuario {RequestingUserId} intentó actualizar plan {PlanId} sin autorización. Propietario: {OwnerId}", requestingUserId, planId, planEntity.NutritionistId);
                 return null;
             }
             planEntity.Name = planDto.Name;
             planEntity.Description = planDto.Description;
             try { await _context.SaveChangesAsync(); }
             catch (DbUpdateException ex) { _logger.LogError(ex, "Error DB al actualizar plan {PlanId}.", planId); return null; }
-            return MapearPlanEntidadADto(planEntity); // Llamada al método estático
+            return MapearPlanEntidadADto(planEntity);
         }
 
         public async Task<bool> DeletePlanAsync(string planId, string requestingUserId)
         {
             var planEntity = await _context.NutritionPlans.FindAsync(planId);
-            if (planEntity == null) return false;
+            if (planEntity == null) { _logger.LogWarning("Eliminación fallida: Plan {PlanId} no encontrado.", planId); return false; }
 
             var requester = await _userManager.FindByIdAsync(requestingUserId);
             bool isAdmin = requester != null && requester.AppRole == UserRole.Admin;
 
             if (planEntity.NutritionistId != requestingUserId && !isAdmin)
             {
-                _logger.LogWarning("Usuario {RequestingUserId} intentó eliminar plan {PlanId} sin autorización.", requestingUserId, planId);
+                _logger.LogWarning("Usuario {RequestingUserId} intentó eliminar plan {PlanId} sin autorización. Propietario: {OwnerId}", requestingUserId, planId, planEntity.NutritionistId);
                 return false;
             }
             _context.NutritionPlans.Remove(planEntity);
@@ -108,39 +109,82 @@ namespace NutriPlat.Api.Services
                 _logger.LogWarning("Intento de asignación por usuario {NutritionistId} que no es Nutricionista o no existe.", nutritionistId);
                 return null;
             }
+
             var client = await _userManager.FindByIdAsync(assignmentDto.ClientId);
             if (client == null || client.AppRole != UserRole.Client)
             {
                 _logger.LogWarning("Intento de asignar plan a usuario {ClientId} que no es Cliente o no existe.", assignmentDto.ClientId);
                 return null;
             }
+
+            // --- NUEVA VERIFICACIÓN: ¿Está el cliente vinculado a ESTE nutricionista? ---
+            if (client.MyNutritionistId != nutritionistId)
+            {
+                _logger.LogWarning("Nutricionista {NutritionistId} intentó asignar plan a cliente {ClientId} no vinculado directamente a él. Cliente vinculado a: {ActualNutritionistId}",
+                    nutritionistId, assignmentDto.ClientId, client.MyNutritionistId ?? "Nadie");
+                return null; // O devolver un DTO de error específico, o lanzar una excepción de negocio.
+            }
+            // --- FIN DE LA NUEVA VERIFICACIÓN ---
+
             var nutritionPlan = await _context.NutritionPlans.FindAsync(assignmentDto.NutritionPlanId);
             if (nutritionPlan == null)
             {
                 _logger.LogWarning("Intento de asignar plan de nutrición inexistente con ID: {NutritionPlanId}", assignmentDto.NutritionPlanId);
                 return null;
             }
+
             var existingAssignment = await _context.UserNutritionPlans
                 .FirstOrDefaultAsync(unp => unp.ClientId == assignmentDto.ClientId && unp.NutritionPlanId == assignmentDto.NutritionPlanId);
+
             if (existingAssignment != null)
             {
-                _logger.LogInformation("Intento de reasignar plan {NutritionPlanId} a cliente {ClientId} que ya está asignado.", assignmentDto.NutritionPlanId, assignmentDto.ClientId);
-                return MapearAsignacionEntidadADto(existingAssignment, nutritionPlan, client, nutritionist);
+                _logger.LogInformation("Intento de reasignar plan {NutritionPlanId} a cliente {ClientId} que ya está asignado. Actualizando asignación existente.", assignmentDto.NutritionPlanId, assignmentDto.ClientId);
+                // Lógica para actualizar la asignación existente si se desea (ej. fechas, estado activo)
+                existingAssignment.StartDate = assignmentDto.StartDate;
+                existingAssignment.EndDate = assignmentDto.EndDate;
+                existingAssignment.IsActive = assignmentDto.IsActive;
+                existingAssignment.AssignedDate = DateTime.UtcNow; // Actualizar fecha de "última asignación/modificación"
+                // No cambiamos AssignedByNutritionistId aquí, asumimos que es el mismo que la asignó originalmente o un admin.
             }
-            var newAssignment = new UserNutritionPlan
+            else
             {
-                ClientId = assignmentDto.ClientId,
-                NutritionPlanId = assignmentDto.NutritionPlanId,
-                AssignedByNutritionistId = nutritionistId,
-                AssignedDate = DateTime.UtcNow,
-                StartDate = assignmentDto.StartDate,
-                EndDate = assignmentDto.EndDate,
-                IsActive = assignmentDto.IsActive
-            };
-            _context.UserNutritionPlans.Add(newAssignment);
-            try { await _context.SaveChangesAsync(); }
-            catch (DbUpdateException ex) { _logger.LogError(ex, "Error al guardar la asignación del plan {NutritionPlanId} al cliente {ClientId}.", assignmentDto.NutritionPlanId, assignmentDto.ClientId); return null; }
-            return MapearAsignacionEntidadADto(newAssignment, nutritionPlan, client, nutritionist);
+                var newAssignment = new UserNutritionPlan
+                {
+                    ClientId = assignmentDto.ClientId,
+                    NutritionPlanId = assignmentDto.NutritionPlanId,
+                    AssignedByNutritionistId = nutritionistId, // El nutricionista que realiza la acción
+                    AssignedDate = DateTime.UtcNow,
+                    StartDate = assignmentDto.StartDate,
+                    EndDate = assignmentDto.EndDate,
+                    IsActive = assignmentDto.IsActive
+                };
+                _context.UserNutritionPlans.Add(newAssignment);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error al guardar la asignación del plan {NutritionPlanId} al cliente {ClientId}.", assignmentDto.NutritionPlanId, assignmentDto.ClientId);
+                return null;
+            }
+
+            // Obtener la asignación (nueva o actualizada) para devolverla
+            var finalAssignment = await _context.UserNutritionPlans
+                .Include(unp => unp.NutritionPlan) // Incluir para obtener nombre/descripción del plan
+                .Include(unp => unp.Client) // Incluir para obtener datos del cliente (si es necesario para el DTO)
+                .Include(unp => unp.AssignedByNutritionist) // Incluir para obtener datos del nutricionista (si es necesario para el DTO)
+                .FirstOrDefaultAsync(unp => unp.ClientId == assignmentDto.ClientId && unp.NutritionPlanId == assignmentDto.NutritionPlanId);
+
+            if (finalAssignment == null || finalAssignment.NutritionPlan == null || finalAssignment.Client == null || finalAssignment.AssignedByNutritionist == null)
+            {
+                _logger.LogError("No se pudo recuperar la asignación completa después de guardar para el plan {NutritionPlanId} y cliente {ClientId}.", assignmentDto.NutritionPlanId, assignmentDto.ClientId);
+                return null; // Algo salió mal al recuperar los datos para el DTO
+            }
+
+            return MapearAsignacionEntidadADto(finalAssignment, finalAssignment.NutritionPlan, finalAssignment.Client, finalAssignment.AssignedByNutritionist);
         }
 
         public async Task<IEnumerable<UserNutritionPlanDto>> GetAssignedPlansForClientAsync(string clientId)
@@ -151,13 +195,20 @@ namespace NutriPlat.Api.Services
                 _logger.LogWarning("Intento de obtener planes para usuario no cliente o inexistente: {ClientId}", clientId);
                 return new List<UserNutritionPlanDto>();
             }
+
             var assignments = await _context.UserNutritionPlans
                 .AsNoTracking()
                 .Where(unp => unp.ClientId == clientId)
                 .Include(unp => unp.NutritionPlan)
                 .Include(unp => unp.AssignedByNutritionist)
-                .Select(unp => MapearAsignacionEntidadADto(unp, unp.NutritionPlan!, client, unp.AssignedByNutritionist!))
+                .Select(unp => MapearAsignacionEntidadADto(
+                    unp,
+                    unp.NutritionPlan!,
+                    client, // Ya tenemos el objeto cliente
+                    unp.AssignedByNutritionist!
+                ))
                 .ToListAsync();
+
             return assignments;
         }
 
@@ -169,13 +220,20 @@ namespace NutriPlat.Api.Services
                 _logger.LogWarning("Intento de obtener asignaciones para usuario no nutricionista o inexistente: {NutritionistId}", nutritionistId);
                 return new List<UserNutritionPlanDto>();
             }
+
             var assignments = await _context.UserNutritionPlans
                 .AsNoTracking()
                 .Where(unp => unp.AssignedByNutritionistId == nutritionistId)
                 .Include(unp => unp.NutritionPlan)
                 .Include(unp => unp.Client)
-                .Select(unp => MapearAsignacionEntidadADto(unp, unp.NutritionPlan!, unp.Client!, nutritionist))
+                .Select(unp => MapearAsignacionEntidadADto(
+                    unp,
+                    unp.NutritionPlan!,
+                    unp.Client!,
+                    nutritionist // Ya tenemos el objeto nutricionista
+                ))
                 .ToListAsync();
+
             return assignments;
         }
 
@@ -183,24 +241,36 @@ namespace NutriPlat.Api.Services
         {
             var assignment = await _context.UserNutritionPlans
                 .FirstOrDefaultAsync(unp => unp.ClientId == clientId && unp.NutritionPlanId == nutritionPlanId);
+
             if (assignment == null)
             {
                 _logger.LogWarning("Intento de desasignar un plan no asignado. Cliente: {ClientId}, Plan: {NutritionPlanId}", clientId, nutritionPlanId);
                 return false;
             }
+
             var requester = await _userManager.FindByIdAsync(requestingUserId);
-            if (requester == null || (assignment.AssignedByNutritionistId != requestingUserId && requester.AppRole != UserRole.Admin))
+            bool isAdmin = requester != null && requester.AppRole == UserRole.Admin;
+
+            // Solo el nutricionista que asignó o un admin pueden desasignar.
+            if (assignment.AssignedByNutritionistId != requestingUserId && !isAdmin)
             {
-                _logger.LogWarning("Usuario {RequestingUserId} intentó desasignar plan de cliente {ClientId} sin autorización. Asignado por: {AssignedBy}", requestingUserId, clientId, assignment.AssignedByNutritionistId);
+                _logger.LogWarning("Usuario {RequestingUserId} intentó desasignar plan de cliente {ClientId} sin autorización. Asignado por: {AssignedBy}",
+                    requestingUserId, clientId, assignment.AssignedByNutritionistId);
                 return false;
             }
+
             _context.UserNutritionPlans.Remove(assignment);
-            try { return await _context.SaveChangesAsync() > 0; }
-            catch (DbUpdateException ex) { _logger.LogError(ex, "Error al eliminar la asignación del plan {NutritionPlanId} al cliente {ClientId}.", nutritionPlanId, clientId); return false; }
+            try
+            {
+                return await _context.SaveChangesAsync() > 0;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error al eliminar la asignación del plan {NutritionPlanId} al cliente {ClientId}.", nutritionPlanId, clientId);
+                return false;
+            }
         }
 
-        // --- Métodos auxiliares de Mapeo ---
-        // CAMBIO: Hacer este método estático
         private static NutritionPlanDto? MapearPlanEntidadADto(NutritionPlanEntity? entity)
         {
             if (entity == null) return null;
@@ -213,8 +283,6 @@ namespace NutriPlat.Api.Services
             };
         }
 
-        // CAMBIO: Hacer este método estático también, ya que no depende del estado de la instancia.
-        //          Todos sus parámetros son explícitos.
         private static UserNutritionPlanDto MapearAsignacionEntidadADto(
             UserNutritionPlan assignment,
             NutritionPlanEntity plan,
