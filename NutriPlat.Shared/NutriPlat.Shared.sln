@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NutriPlat.Shared", "NutriPlat.Shared\NutriPlat.Shared.csproj", "{CF5FB07A-E3EA-412E-8986-1AB49F3AABC0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NutriPlat.Api", "..\NutriPlat.Api\NutriPlat.Api\NutriPlat.Api.csproj", "{5BE596A1-D898-48D6-BFE9-0A11DE9A17F9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF5FB07A-E3EA-412E-8986-1AB49F3AABC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF5FB07A-E3EA-412E-8986-1AB49F3AABC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF5FB07A-E3EA-412E-8986-1AB49F3AABC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF5FB07A-E3EA-412E-8986-1AB49F3AABC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5BE596A1-D898-48D6-BFE9-0A11DE9A17F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BE596A1-D898-48D6-BFE9-0A11DE9A17F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BE596A1-D898-48D6-BFE9-0A11DE9A17F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BE596A1-D898-48D6-BFE9-0A11DE9A17F9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D6634C9D-AB35-43EA-8F93-115E0EB6477D}
+	EndGlobalSection
+EndGlobal
