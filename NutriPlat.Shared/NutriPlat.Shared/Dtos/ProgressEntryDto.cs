@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace NutriPlat.Shared.Dtos
+namespace NutriPlat.Shared.Dtos // Asegúrate de que el espacio de nombres sea correcto
 {
     /// <summary>
     /// Data Transfer Object para una entrada de seguimiento de progreso.
@@ -11,18 +11,18 @@ namespace NutriPlat.Shared.Dtos
     public class ProgressEntryDto
     {
         /// <summary>
-        /// Identificador único de la entrada de progreso (generado por la API).
+        /// Identificador único de la entrada de progreso (generado por la API al mostrar, null al crear).
         /// </summary>
         public string? Id { get; set; }
 
         /// <summary>
         /// Identificador del usuario (Cliente) al que pertenece esta entrada de progreso.
-        /// Al crear, este será el ID del usuario autenticado.
+        /// No se envía al crear (se toma del token), pero se devuelve al obtener.
         /// </summary>
-        public string? UserId { get; set; } // Se establecerá desde el token al crear
+        public string? UserId { get; set; }
 
         /// <summary>
-        /// Fecha en que se registró esta entrada de progreso.
+        /// Fecha en que se realizó/corresponde esta entrada de progreso.
         /// </summary>
         [Required(ErrorMessage = "La fecha de la entrada es obligatoria.")]
         public DateTime EntryDate { get; set; } = DateTime.UtcNow;
@@ -30,13 +30,13 @@ namespace NutriPlat.Shared.Dtos
         /// <summary>
         /// Peso del usuario en kilogramos (opcional).
         /// </summary>
-        [Range(0, 500, ErrorMessage = "El peso debe ser un valor válido.")]
+        [Range(0.1, 500, ErrorMessage = "El peso debe ser un valor positivo y realista.")]
         public decimal? WeightKg { get; set; }
 
         /// <summary>
         /// Porcentaje de grasa corporal (opcional).
         /// </summary>
-        [Range(0, 100, ErrorMessage = "El porcentaje de grasa corporal debe estar entre 0 y 100.")]
+        [Range(0.1, 99.9, ErrorMessage = "El porcentaje de grasa corporal debe ser un valor válido.")]
         public decimal? BodyFatPercentage { get; set; }
 
         /// <summary>
@@ -59,7 +59,8 @@ namespace NutriPlat.Shared.Dtos
 
         /// <summary>
         /// Fecha de creación del registro en el sistema (solo lectura para el cliente).
+        /// Se establece por la API al crear la entrada.
         /// </summary>
-        public DateTime? CreatedAt { get; /*private*/ set; } // El 'private set' es ideal si solo lo llena la API
+        public DateTime? CreatedAt { get; set; }
     }
 }
