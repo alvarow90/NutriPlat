@@ -1,0 +1,77 @@
+﻿@{
+    ViewData["Title"] = "Panel de Control";
+    Layout = "_Layout"; // Asumiendo que usas la plantilla principal
+}
+
+<div class="container mx-auto mt-8 px-4">
+    <div id="welcomeMessage" class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800">Cargando...</h1>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h2 class="text-xl font-semibold text-teal-600 mb-3">Mis Clientes</h2>
+            <p class="text-gray-700 mb-4">
+                Ver, vincular y gestionar la información de tus clientes.
+            </p>
+            <a id="linkMyClients" href="#" class="inline-block bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-md transition duration-150">
+                Gestionar Clientes
+            </a>
+        </div>
+
+        <div id="cardNutritionPlans" class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300" style="display:none;">
+            <h2 class="text-xl font-semibold text-blue-600 mb-3">Planes de Nutrición</h2>
+            <p class="text-gray-700 mb-4">
+                Crear, ver y asignar planes de nutrición detallados.
+            </p>
+            <a id="linkNutritionPlans" href="#" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-150">
+                Gestionar Planes
+            </a>
+        </div>
+
+        <div id="cardWorkoutRoutines" class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300" style="display:none;">
+            <h2 class="text-xl font-semibold text-indigo-600 mb-3">Rutinas de Entrenamiento</h2>
+            <p class="text-gray-700 mb-4">
+                Diseñar, ver y asignar rutinas de entrenamiento efectivas.
+            </p>
+            <a id="linkWorkoutRoutines" href="#" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-md transition duration-150">
+                Gestionar Rutinas
+            </a>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h2 class="text-xl font-semibold text-green-600 mb-3">Progreso de Clientes</h2>
+            <p class="text-gray-700 mb-4">
+                Visualiza y analiza el progreso registrado por tus clientes.
+            </p>
+            <a id="linkClientProgress" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition duration-150">
+                Ver Progreso
+            </a>
+        </div>
+
+        <div id="cardUserManagement" class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300" style="display:none;">
+            <h2 class="text-xl font-semibold text-red-600 mb-3">Gestión de Usuarios</h2>
+            <p class="text-gray-700 mb-4">
+                Administrar todas las cuentas de usuario y roles del sistema.
+            </p>
+            <a id="linkUserManagement" href="#" class="inline-block bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150">
+                Administrar Usuarios
+            </a>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h2 class="text-xl font-semibold text-purple-600 mb-3">Mi Perfil</h2>
+            <p class="text-gray-700 mb-4">
+                Actualiza tu información personal y de contacto.
+            </p>
+            <a asp-controller="Account" asp-action="MyProfile" @* Necesitarás esta acción y vista *@
+               class="inline-block bg-purple-500 hover:bg-purple-600 text-white font-medium py-2 px-4 rounded-md transition duration-150">
+                Ver Mi Perfil
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

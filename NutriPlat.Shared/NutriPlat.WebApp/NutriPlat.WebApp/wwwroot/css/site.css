@@ -1,0 +1,16 @@
+/* NutriPlat.WebApp/wwwroot/css/site.css */
+
+/* Estilos globales o personalizados adicionales a Tailwind CSS */
+body {
+    /* Tailwind ya aplica 'bg-gray-100' y 'font-family: Inter' desde _Layout.cshtml */
+    /* Puedes añadir más estilos base aquí si es necesario */
+}
+
+/* Ejemplo de un estilo personalizado que podrías usar */
+.custom-card {
+    /* background-color: #f9f9f9; */
+    /* border: 1px solid #e1e1e1; */
+    /* padding: 1.5rem; */
+    /* border-radius: 0.5rem; */
+    /* box-shadow: 0 2px 4px rgba(0,0,0,0.05); */
+}

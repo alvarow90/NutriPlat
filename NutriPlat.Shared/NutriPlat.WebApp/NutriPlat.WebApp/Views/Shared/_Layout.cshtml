@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NutriPlat WebApp</title>
+    @* Incluyendo Tailwind CSS desde CDN *@
+    <script src="https://cdn.tailwindcss.com"></script>
+    @* Incluyendo Google Fonts (Inter) *@
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @* Enlace a tu hoja de estilos personalizada *@
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    <header>
+        <nav class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="text-2xl font-bold text-teal-600">
+                            NutriPlat
+                        </a>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a asp-area="" asp-controller="Home" asp-action="Index" class="text-gray-700 hover:bg-teal-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
+                            <a id="navDashboardLink" href="#" class="text-gray-700 hover:bg-teal-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium" style="display:none;">Panel</a>
+                            <a id="navLogin" asp-area="" asp-controller="Account" asp-action="Login" class="text-gray-700 hover:bg-teal-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Iniciar Sesión</a>
+                            <a id="navLogout" href="#" onclick="logoutUserAndRedirect()" class="text-gray-700 hover:bg-teal-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium" style="display:none;">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                    @* Aquí podrías añadir un botón de menú para móviles *@
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container mx-auto mt-6 px-4 flex-grow">
+        @* flex-grow para que el contenido empuje el footer *@
+        <main role="main" class="pb-3">
+            @RenderBody() @* Aquí se inserta el contenido de las vistas específicas *@
+        </main>
+    </div>
+
+    <footer class="border-t footer text-muted bg-white mt-auto">
+        @* mt-auto para empujar al fondo si el contenido es corto *@
+        <div class="container mx-auto py-4 text-center">
+            &copy; @DateTime.Now.Year - NutriPlat WebApp - <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-teal-600 hover:text-teal-500">Política de Privacidad</a>
+        </div>
+    </footer>
+
+    @* Scripts comunes al final del body para mejor rendimiento *@
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @* Script para manejar la visibilidad de los enlaces de navegación y logout *@
+    <script>
+        function updateNavBasedOnAuth() {
+            const token = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            const navLogin = document.getElementById('navLogin');
+            const navDashboardLink = document.getElementById('navDashboardLink');
+            const navLogout = document.getElementById('navLogout');
+
+            if (token && navLogin && navLogout && navDashboardLink) {
+                navLogin.style.display = 'none';
+                navLogout.style.display = 'block';
+                navDashboardLink.style.display = 'block';
+
+                // Configurar el enlace del dashboard según el rol
+                if (userRole) {
+                    let dashboardUrl = '#'; // URL por defecto o de fallback
+                    switch (userRole.toLowerCase()) {
+                        case 'admin':
+                            // Asumimos que tienes un AdminDashboardController con una acción Index
+                            dashboardUrl = '@Url.Action("Index", "AdminDashboard")';
+                            break;
+                        case 'nutritionist':
+                            // Asumimos que tienes un NutritionistDashboardController con una acción Index
+                            dashboardUrl = '@Url.Action("Index", "NutritionistDashboard")';
+                            break;
+                        case 'trainer':
+                             // Asumimos que tienes un TrainerDashboardController con una acción Index
+                            dashboardUrl = '@Url.Action("Index", "TrainerDashboard")';
+                            break;
+                        default:
+                            navDashboardLink.style.display = 'none';
+                    }
+                    if (navDashboardLink.style.display !== 'none') {
+                        navDashboardLink.href = dashboardUrl;
+                    }
+                } else {
+                     navDashboardLink.style.display = 'none';
+                }
+
+            } else if (navLogin && navLogout && navDashboardLink) {
+                navLogin.style.display = 'block';
+                navLogout.style.display = 'none';
+                navDashboardLink.style.display = 'none';
+            }
+        }
+
+        function logoutUserAndRedirect() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userId');
+            updateNavBasedOnAuth(); // Actualizar la navegación inmediatamente
+            window.location.href = '@Url.Action("Login", "Account")'; // Redirigir a la página de login usando Url.Action
+        }
+
+        // Llamar a la función cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', updateNavBasedOnAuth);
+    </script>
+
+    @* Permite a las vistas individuales añadir sus propios scripts aquí *@
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
